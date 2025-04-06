@@ -380,7 +380,7 @@ exit(int status)
   acquire(&p->lock);
 
   p->xstate = status;
-  *p->exit_msg = *exit_message; // Add the exit_message to the pcb
+  safestrcpy(p->exit_msg, exit_message, sizeof(p->exit_msg)); // Add the exit_message to the pcb
   p->state = ZOMBIE;
 
   release(&wait_lock);
@@ -412,12 +412,14 @@ wait(uint64 addr, uint64 msg_addr)
         if(pp->state == ZOMBIE){
           // Found one.
           pid = pp->pid;
-          if(
-            (addr != 0 
-            && copyout(p->pagetable, addr, (char *)&pp->xstate, sizeof(pp->xstate)) < 0 )
-            & 
-            (msg_addr != 0 
-            && copyout(p->pagetable, msg_addr, pp->exit_msg, 32) < 0)) {
+          // Before copying the exit status and message, check if the addresses are valid
+          if(addr != 0 && copyout(p->pagetable, addr, (char *)&pp->xstate, sizeof(pp->xstate)) < 0) {
+            release(&pp->lock);
+            release(&wait_lock);
+            return -1;
+          }
+
+          if(msg_addr != 0 && copyout(p->pagetable, msg_addr, pp->exit_msg, sizeof(pp->exit_msg)) < 0) {
             release(&pp->lock);
             release(&wait_lock);
             return -1;
