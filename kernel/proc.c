@@ -350,7 +350,15 @@ exit(int status)
 
   // Get the exit message
   char exit_message[32];
-  argstr(1,exit_message,32);
+  // check for null pointer:
+  uint64 msg_addr;
+  argaddr(1,&msg_addr);
+  if(msg_addr == 0){
+    exit_message[0] = '\0';
+  }
+  else{
+    argstr(1,exit_message,32);
+  }
 
   if(p == initproc)
     panic("init exiting");

@@ -23,5 +23,5 @@ main()
         printf("Parent exiting\n");
     }
 
-    exit(0, "exit message");
+    exit(0, 0);
 }
