@@ -691,3 +691,99 @@ procdump(void)
     printf("\n");
   }
 }
+
+// does the same job as fork with 2 changes:
+// 1. doesn't change state to runnable
+// 2. returns to child it's fork number from forkn instead of 0
+int
+custom_fork(int fork_num){
+  int i, pid;
+  struct proc *np;
+  struct proc *p = myproc();
+
+  // Allocate process.
+  if((np = allocproc()) == 0){
+    return -1;
+  }
+
+  // Copy user memory from parent to child.
+  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+    freeproc(np);
+    release(&np->lock);
+    return -1;
+  }
+  np->sz = p->sz;
+
+  // copy saved user registers.
+  *(np->trapframe) = *(p->trapframe);
+
+  // Cause fork to return 0 in the child.
+  np->trapframe->a0 = fork_num;
+
+  // increment reference counts on open file descriptors.
+  for(i = 0; i < NOFILE; i++)
+    if(p->ofile[i])
+      np->ofile[i] = filedup(p->ofile[i]);
+  np->cwd = idup(p->cwd);
+
+  safestrcpy(np->name, p->name, sizeof(p->name));
+
+  pid = np->pid;
+
+  release(&np->lock);
+
+  acquire(&wait_lock);
+  np->parent = p;
+  release(&wait_lock);
+
+  acquire(&np->lock);
+  np->state = USED;
+  release(&np->lock);
+
+  return pid;
+}
+
+
+/*
+@param n: number of child processes to create
+@param pids: array to fill the new pids
+@brief Create n child processes and return their pid 
+*/ 
+int
+forkn(int n, uint64 pids){
+  int i, j, pid;
+  int processes[n+1];
+  struct proc *np;
+  for(i = 1; i <= n; i++){
+    // create child number i
+    pid = custom_fork(i);
+
+    // if failed - free all child processes and return -1
+    if(pid == -1){
+      for(j = 1; j < i; j++){
+        np = &proc[processes[j]];
+        acquire(&np->lock);
+        freeproc(np);
+        release(&np->lock);
+      }
+      return -1;
+    }
+
+    // if succeeded - add to pids' array
+    else{
+      copyout(myproc()->pagetable, pids + ((i-1)*sizeof(int)), (char*)&pid, sizeof(pid));
+      processes[i] = pid;
+    }
+  }
+
+  // If succeeded - update children states and return 0
+  for(i = 0; i < n; i++){
+    np = &proc[processes[i]];
+    acquire(&np->lock);
+    np->state = RUNNABLE;
+    release(&np->lock);
+  }
+  return 0;
+}
+
+

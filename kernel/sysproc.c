@@ -96,3 +96,14 @@ uint64
 sys_memsize(void){
   return myproc()->sz;
 }
+
+uint64
+sys_forkn(void){
+  int n;
+  argint(0, &n);
+
+  uint64 p;
+  argaddr(1, &p);
+
+  return forkn(n,p); // forkn(int n, uint64 pids);
+}
