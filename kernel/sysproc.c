@@ -107,3 +107,13 @@ sys_forkn(void){
 
   return forkn(n,p); // forkn(int n, uint64 pids);
 }
+
+uint64
+sys_waitall(void){
+  uint64 n;
+  argaddr(1, &n);
+  uint64 statuses;
+  argaddr(1, &statuses);
+
+  return waitall(n,statuses); 
+}
