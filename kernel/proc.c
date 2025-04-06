@@ -380,7 +380,7 @@ exit(int status)
   acquire(&p->lock);
 
   p->xstate = status;
-  *p->exit_msg = exit_message; // Add the exit_message to the pcb
+  *p->exit_msg = *exit_message; // Add the exit_message to the pcb
   p->state = ZOMBIE;
 
   release(&wait_lock);
@@ -398,7 +398,6 @@ wait(uint64 addr, uint64 msg_addr)
   struct proc *pp;
   int havekids, pid;
   struct proc *p = myproc();
-
   acquire(&wait_lock);
 
   for(;;){
@@ -413,10 +412,12 @@ wait(uint64 addr, uint64 msg_addr)
         if(pp->state == ZOMBIE){
           // Found one.
           pid = pp->pid;
-          if(addr != 0 
-            && copyout(p->pagetable, addr, (char *)&pp->xstate, sizeof(pp->xstate)) < 0 
-            && msg_addr != 0 
-            && copyout(p->pagetable, msg_addr, pp->exit_msg, 32) < 0) {
+          if(
+            (addr != 0 
+            && copyout(p->pagetable, addr, (char *)&pp->xstate, sizeof(pp->xstate)) < 0 )
+            & 
+            (msg_addr != 0 
+            && copyout(p->pagetable, msg_addr, pp->exit_msg, 32) < 0)) {
             release(&pp->lock);
             release(&wait_lock);
             return -1;
