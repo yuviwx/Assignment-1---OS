@@ -743,6 +743,19 @@ custom_fork(int fork_num){
   return pid;
 }
 
+// get pcb with pid
+struct proc *find_proc_by_pid(int pid) {
+  struct proc *p;
+  for (p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if (p->pid == pid) {
+      return p;  // keep the lock held
+    }
+    release(&p->lock);
+  }
+  return 0;
+}
+
 
 /*
 @param n: number of child processes to create
@@ -757,12 +770,12 @@ forkn(int n, uint64 pids){
   for(i = 1; i <= n; i++){
     // create child number i
     pid = custom_fork(i);
+    printf("created child number %d\n", i);
 
     // if failed - free all child processes and return -1
     if(pid == -1){
       for(j = 1; j < i; j++){
-        np = &proc[processes[j]];
-        acquire(&np->lock);
+        np = find_proc_by_pid(processes[j]);
         freeproc(np);
         release(&np->lock);
       }
@@ -777,9 +790,8 @@ forkn(int n, uint64 pids){
   }
 
   // If succeeded - update children states and return 0
-  for(i = 0; i < n; i++){
-    np = &proc[processes[i]];
-    acquire(&np->lock);
+  for(i = 1; i <= n; i++){
+    np = find_proc_by_pid(processes[i]);
     np->state = RUNNABLE;
     release(&np->lock);
   }
