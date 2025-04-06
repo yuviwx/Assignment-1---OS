@@ -348,6 +348,10 @@ exit(int status)
 {
   struct proc *p = myproc();
 
+  // Get the exit message
+  char exit_message[32];
+  argstr(1,exit_message,32);
+
   if(p == initproc)
     panic("init exiting");
 
@@ -376,6 +380,7 @@ exit(int status)
   acquire(&p->lock);
 
   p->xstate = status;
+  *p->exit_msg = exit_message; // Add the exit_message to the pcb
   p->state = ZOMBIE;
 
   release(&wait_lock);
@@ -388,7 +393,7 @@ exit(int status)
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int
-wait(uint64 addr)
+wait(uint64 addr, char child_msg[32])
 {
   struct proc *pp;
   int havekids, pid;
@@ -409,7 +414,7 @@ wait(uint64 addr)
           // Found one.
           pid = pp->pid;
           if(addr != 0 && copyout(p->pagetable, addr, (char *)&pp->xstate,
-                                  sizeof(pp->xstate)) < 0) {
+                                  sizeof(pp->xstate)) < 0 && copyout(p)<0) {
             release(&pp->lock);
             release(&wait_lock);
             return -1;
