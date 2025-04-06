@@ -778,7 +778,6 @@ forkn(int n, uint64 pids){
   for(i = 1; i <= n; i++){
     // create child number i
     pid = custom_fork(i);
-    printf("created child number %d\n", i);
 
     // if failed - free all child processes and return -1
     if(pid == -1){
@@ -814,7 +813,6 @@ forkn(int n, uint64 pids){
 */
 int
 waitall(uint64 n, uint64 statuses) {
-  printf("enter waitall\n");
   //nullpointer
   if(statuses == 0 || n == 0 ) {
     return -1;
@@ -830,33 +828,27 @@ waitall(uint64 n, uint64 statuses) {
     if(pp->parent == p)
       num_of_kids++;
   }
-  printf("number of children: %d\n", num_of_kids);
   //return 0 and sets n to 0
   if (num_of_kids == 0) { 
     copyout(p->pagetable, n, (char *)&num_of_kids,sizeof(num_of_kids));
     return 0;
   }
     
-  int x_statuses[num_of_kids];
+  int x_statuses[NPROC];
   int i=0;
   while(i<num_of_kids){
-    printf("enter while\n");
     // Scan through table looking for exited children.
     for(pp = proc; pp < &proc[NPROC]; pp++){
-      printf("enter for\n");
       if(pp->parent == p){
-        printf("found a child\n");
         // make sure the child isn't still in exit() or swtch().
         acquire(&pp->lock);
         if(pp->state == ZOMBIE){
-          printf("child is zombie\n");
           // Found one.
           x_statuses[i] = pp->xstate;
           freeproc(pp);
           i++;
         }
         else{
-          printf("went to sleep\n");                
           // Wait for a child to exit.
           sleep(p, &wait_lock);  //DOC: wait-sleep
         }
@@ -877,8 +869,8 @@ waitall(uint64 n, uint64 statuses) {
     release(&wait_lock);
     return -1;
   }
-  
-  if(copyout(p->pagetable, statuses, (char *)&x_statuses, sizeof(x_statuses)) < 0) {
+
+  if(copyout(p->pagetable, statuses, (char *)x_statuses, sizeof(int) * num_of_kids) < 0) {
     release(&wait_lock);
     return -1;
   }

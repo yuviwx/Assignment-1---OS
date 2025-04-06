@@ -111,7 +111,7 @@ sys_forkn(void){
 uint64
 sys_waitall(void){
   uint64 n;
-  argaddr(1, &n);
+  argaddr(0, &n);
   uint64 statuses;
   argaddr(1, &statuses);
 
