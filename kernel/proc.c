@@ -806,4 +806,84 @@ forkn(int n, uint64 pids){
   return 0;
 }
 
+/*
+@param n: pointer that will contain the number of children that finished
+@param statuses: array that will contain the children exit statuses
+@brief Waits for all child processes to finish
+@return 0 on seccuss, -1 otherwise
+*/
+int
+waitall(uint64 n, uint64 statuses) {
+  printf("enter waitall\n");
+  //nullpointer
+  if(statuses == 0 || n == 0 ) {
+    return -1;
+  }
+   
+  struct proc *pp;
+  int num_of_kids = 0;
+  struct proc *p = myproc();
+  acquire(&wait_lock);
+
+  //get number of children:
+  for(pp = proc; pp < &proc[NPROC]; pp++){
+    if(pp->parent == p)
+      num_of_kids++;
+  }
+  printf("number of children: %d\n", num_of_kids);
+  //return 0 and sets n to 0
+  if (num_of_kids == 0) { 
+    copyout(p->pagetable, n, (char *)&num_of_kids,sizeof(num_of_kids));
+    return 0;
+  }
+    
+  int x_statuses[num_of_kids];
+  int i=0;
+  while(i<num_of_kids){
+    printf("enter while\n");
+    // Scan through table looking for exited children.
+    for(pp = proc; pp < &proc[NPROC]; pp++){
+      printf("enter for\n");
+      if(pp->parent == p){
+        printf("found a child\n");
+        // make sure the child isn't still in exit() or swtch().
+        acquire(&pp->lock);
+        if(pp->state == ZOMBIE){
+          printf("child is zombie\n");
+          // Found one.
+          x_statuses[i] = pp->xstate;
+          freeproc(pp);
+          i++;
+        }
+        else{
+          printf("went to sleep\n");                
+          // Wait for a child to exit.
+          sleep(p, &wait_lock);  //DOC: wait-sleep
+        }
+        release(&pp->lock);
+      }
+    }
+
+    // if parent is killed before children
+    if(killed(p)){
+      release(&wait_lock);
+      return -1;
+    }
+
+  }
+
+  // updating n and statuses
+  if (copyout(p->pagetable, n, (char *)&num_of_kids,sizeof(num_of_kids))<0) {
+    release(&wait_lock);
+    return -1;
+  }
+  
+  if(copyout(p->pagetable, statuses, (char *)&x_statuses, sizeof(x_statuses)) < 0) {
+    release(&wait_lock);
+    return -1;
+  }
+  
+  release(&wait_lock);
+  return 0;
+}
 
