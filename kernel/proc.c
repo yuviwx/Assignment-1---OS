@@ -772,6 +772,11 @@ struct proc *find_proc_by_pid(int pid) {
 */ 
 int
 forkn(int n, uint64 pids){
+  // sanity case for n - number of children
+  if(n < 1 || n > 16){
+    return -1;
+  }
+
   int i, j, pid;
   int processes[n+1];
   struct proc *np;
