@@ -744,10 +744,6 @@ custom_fork(int fork_num){
   np->parent = p;
   release(&wait_lock);
 
-  acquire(&np->lock);
-  np->state = USED;
-  release(&np->lock);
-
   return pid;
 }
 
@@ -836,6 +832,7 @@ waitall(uint64 n, uint64 statuses) {
   //return 0 and sets n to 0
   if (num_of_kids == 0) { 
     copyout(p->pagetable, n, (char *)&num_of_kids,sizeof(num_of_kids));
+    release(&wait_lock);
     return 0;
   }
     
