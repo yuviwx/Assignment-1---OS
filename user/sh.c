@@ -168,10 +168,10 @@ main(void)
     if(fork1() == 0)
     runcmd(parsecmd(buf));
   char exit_msg[32];
-  //memset(exit_msg, 0, sizeof(exit_msg));
-  int pid = wait(0, exit_msg);
+  memset(exit_msg, 0, sizeof(exit_msg));
+  wait(0, exit_msg);
   if (exit_msg[0] != '\0') {
-    printf("Process %d exit message: %s\n", pid, exit_msg);
+    printf("%s\n", exit_msg);
   }
   }
   exit(0,"");
