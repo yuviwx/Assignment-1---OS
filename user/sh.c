@@ -168,7 +168,6 @@ main(void)
     if(fork1() == 0)
     runcmd(parsecmd(buf));
   char exit_msg[32];
-  memset(exit_msg, 0, sizeof(exit_msg));
   wait(0, exit_msg);
   if (exit_msg[0] != '\0') {
     printf("%s\n", exit_msg);
