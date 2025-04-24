@@ -5,24 +5,17 @@
 int
 main()
 {
-    int pids[4];
-    int result = forkn(4, pids);
-
-    // This will run in the parent only
-    if(result == 0){
-        printf("Parent process: created 4 children:\n");
-        for(int i = 0; i < 4; i++){
-            printf("Child PID: %d\n", pids[i]);
-        }
-        int n;
-        int statuses[5];
-        waitall(&n, statuses);
-        printf("the number of children: %d\n", n);
-        for(int i=0; i<n; i++) {
-            printf("child number %d exit status is: %d\n", i, statuses[i]);
-        }
-        printf("Parent exiting\n");
-    }
-
+    int n;
+    int statuses[64];
+    
+    // Call waitall with no child processes
+    printf("Testing waitall with no children:\n");
+    int result = waitall(&n, statuses);
+    
+    if(result == 0 && n == 0)
+        printf("  Passed: waitall correctly returned with n=0\n");
+    else
+        printf("  Failed: waitall should set n=0 but got n=%d, result=%d\n", n, result);
+    
     exit(0, 0);
 }

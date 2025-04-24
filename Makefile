@@ -138,6 +138,12 @@ UPROGS=\
 	$U/_test_forkn\
 	$U/_test_waitall\
 	$U/_bigarray\
+	$U/_test_forkn\
+	$U/_test_waitall\
+	$U/_test_edge_cases\
+	$U/_test_parent_killed\
+	$U/_test_memory\
+	$U/_test_calculation\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
